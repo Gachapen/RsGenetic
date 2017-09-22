@@ -39,7 +39,7 @@ impl<T, F> Selector<T, F> for MaximizeSelector
     where T: Phenotype<F>,
           F: Fitness
 {
-    fn select(&self, population: &[T]) -> Result<Parents<T>, String> {
+    fn select<'a>(&self, population: &'a [T]) -> Result<Vec<&'a T>, String> {
         if self.count == 0 || self.count % 2 != 0 || self.count * 2 >= population.len() {
             return Err(format!("Invalid parameter `count`: {}. Should be larger than zero, a \
                                 multiple of two and less than half the population size.",
@@ -48,13 +48,8 @@ impl<T, F> Selector<T, F> for MaximizeSelector
 
         let mut borrowed: Vec<&T> = population.iter().collect();
         borrowed.sort_by(|x, y| y.fitness().cmp(&x.fitness()));
-        let mut index = 0;
-        let mut result: Parents<T> = Vec::new();
-        while index < self.count {
-            result.push((borrowed[index].clone(), borrowed[index + 1].clone()));
-            index += 2;
-        }
-        Ok(result)
+        borrowed.truncate(self.count);
+        Ok(borrowed)
     }
 }
 
@@ -89,7 +84,7 @@ mod tests {
     fn test_result_size() {
         let selector = MaximizeSelector::new(20);
         let population: Vec<Test> = (0..100).map(|i| Test { f: i }).collect();
-        assert_eq!(20, selector.select(&population).unwrap().len() * 2);
+        assert_eq!(20, selector.select(&population).unwrap().len());
     }
 
     #[test]
@@ -97,15 +92,15 @@ mod tests {
         let selector = MaximizeSelector::new(20);
         let population: Vec<Test> = (0..100).map(|i| Test { f: i }).collect();
         // The greatest fitness should be 99.
-        assert!(selector.select(&population).unwrap()[0].0.fitness().f == 99);
+        assert!(selector.select(&population).unwrap()[0].fitness().f == 99);
     }
 
     #[test]
     fn test_contains_best() {
         let selector = MaximizeSelector::new(2);
         let population: Vec<Test> = (0..100).map(|i| Test { f: i }).collect();
-        let parents = selector.select(&population).unwrap()[0];
-        assert!(parents.0.fitness() ==
+        let parent = selector.select(&population).unwrap()[0];
+        assert!(parent.fitness() ==
                 population.iter()
             .max_by_key(|x| x.fitness())
             .unwrap()

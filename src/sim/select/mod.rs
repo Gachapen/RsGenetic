@@ -32,9 +32,6 @@ pub use self::max::MaximizeSelector;
 pub use self::tournament::TournamentSelector;
 pub use self::stochastic::StochasticSelector;
 
-/// `Parents` come in a `Vec` of two `T`'s.
-pub type Parents<T> = Vec<(T, T)>;
-
 /// A `Selector` can select `Parents` for a new iteration of a `Simulation`.
 pub trait Selector<T, F>: Debug
     where T: Phenotype<F>,
@@ -46,5 +43,5 @@ pub trait Selector<T, F>: Debug
     /// `Err(String)`, containing a message indicating the error.
     ///
     /// Otherwise it contains a vector of parent pairs wrapped in `Ok`.
-    fn select(&self, population: &[T]) -> Result<Parents<T>, String>;
+    fn select<'a>(&self, population: &'a [T]) -> Result<Vec<&'a T>, String>;
 }
