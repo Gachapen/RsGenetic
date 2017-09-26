@@ -21,22 +21,19 @@ use rand::Rng;
 /// Runs several tournaments, and selects best performing phenotypes from each tournament.
 #[derive(Copy, Clone, Debug)]
 pub struct TournamentSelector {
-    count: usize,
     participants: usize,
 }
 
 impl TournamentSelector {
     /// Create and return a tournament selector.
     ///
-    /// Such a selector runs `count / 2` tournaments, each with `participants` participants.
-    /// From each tournament, the best 2 phenotypes are selected, yielding
-    /// `count` parents.
+    /// Such a selector runs N tournaments (N = population size),
+    /// each with `participants` participants.
+    /// From each tournament, the best phenotype is selected, yielding N parents.
     ///
-    /// * `count`: must be larger than zero, a multiple of two and less than the population size.
     /// * `participants`: must be larger than zero and less than the population size.
-    pub fn new(count: usize, participants: usize) -> TournamentSelector {
+    pub fn new(participants: usize) -> TournamentSelector {
         TournamentSelector {
-            count: count,
             participants: participants,
         }
     }
@@ -47,11 +44,6 @@ impl<T, F> Selector<T, F> for TournamentSelector
           F: Fitness
 {
     fn select<'a>(&self, population: &'a [T]) -> Result<Vec<&'a T>, String> {
-        if self.count == 0 || self.count % 2 != 0 || self.count * 2 >= population.len() {
-            return Err(format!("Invalid parameter `count`: {}. Should be larger than zero, a \
-                                multiple of two and less than half the population size.",
-                               self.count));
-        }
         if self.participants == 0 || self.participants >= population.len() {
             return Err(format!("Invalid parameter `participants`: {}. Should be larger than \
                                 zero and less than the population size.",
@@ -60,7 +52,7 @@ impl<T, F> Selector<T, F> for TournamentSelector
 
         let mut result: Vec<&T> = Vec::new();
         let mut rng = ::rand::thread_rng();
-        for _ in 0..self.count {
+        for _ in 0..population.len() {
             let mut tournament: Vec<&T> = Vec::with_capacity(self.participants);
             for _ in 0..self.participants {
                 let index = rng.gen_range::<usize>(0, population.len());
@@ -79,44 +71,23 @@ mod tests {
     use test::Test;
 
     #[test]
-    fn test_count_zero() {
-        let selector = TournamentSelector::new(0, 1);
-        let population: Vec<Test> = (0..100).map(|i| Test { f: i }).collect();
-        assert!(selector.select(&population).is_err());
-    }
-
-    #[test]
     fn test_participants_zero() {
-        let selector = TournamentSelector::new(2, 0);
-        let population: Vec<Test> = (0..100).map(|i| Test { f: i }).collect();
-        assert!(selector.select(&population).is_err());
-    }
-
-    #[test]
-    fn test_count_odd() {
-        let selector = TournamentSelector::new(5, 1);
-        let population: Vec<Test> = (0..100).map(|i| Test { f: i }).collect();
-        assert!(selector.select(&population).is_err());
-    }
-
-    #[test]
-    fn test_count_too_large() {
-        let selector = TournamentSelector::new(100, 1);
+        let selector = TournamentSelector::new(0);
         let population: Vec<Test> = (0..100).map(|i| Test { f: i }).collect();
         assert!(selector.select(&population).is_err());
     }
 
     #[test]
     fn test_participants_too_large() {
-        let selector = TournamentSelector::new(2, 100);
+        let selector = TournamentSelector::new(100);
         let population: Vec<Test> = (0..100).map(|i| Test { f: i }).collect();
         assert!(selector.select(&population).is_err());
     }
 
     #[test]
     fn test_result_size() {
-        let selector = TournamentSelector::new(20, 5);
+        let selector = TournamentSelector::new(5);
         let population: Vec<Test> = (0..100).map(|i| Test { f: i }).collect();
-        assert_eq!(20, selector.select(&population).unwrap().len());
+        assert_eq!(100, selector.select(&population).unwrap().len());
     }
 }
