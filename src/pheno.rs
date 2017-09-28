@@ -42,5 +42,5 @@ pub trait Phenotype<F>: Clone
     /// Perform crossover on this Phenotype, returning a new Phenotype.
     fn crossover(&self, &Self) -> Self;
     /// Perform mutation on this Phenotype, returning a new Phenotype.
-    fn mutate(&self) -> Self;
+    fn mutate(self) -> Self;
 }

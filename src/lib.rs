@@ -140,7 +140,7 @@
 //!     }
 //!
 //!     // Mutate an individual, changing its state
-//!     fn mutate(&self) -> MyPheno {
+//!     fn mutate(self) -> MyPheno {
 //!         MyPheno {
 //!             x: self.x + 1,
 //!             y: self.y - 1,

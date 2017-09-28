@@ -75,7 +75,7 @@ impl Phenotype<MyFitness> for MyData {
         MyData { x: (self.x + other.x) / 2.0 }
     }
 
-    fn mutate(&self) -> MyData {
+    fn mutate(self) -> MyData {
         // Shift x with a random number.
         // (This RNG code should reside somewhere else, not in this function, but it's just an
         // example).
