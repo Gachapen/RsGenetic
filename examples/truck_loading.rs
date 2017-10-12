@@ -119,10 +119,10 @@ fn main() {
         }
         population.push(LoadingScheme { scheme: pheno });
     }
-    let mut s = Simulator::builder(&mut population)
-                    .set_selector(Box::new(MaximizeSelector::new(10)))
-                    .set_max_iters(100)
-                    .build();
+    let mut s = Simulator::builder(population)
+        .set_selector(Box::new(MaximizeSelector::new(10)))
+        .set_max_iters(100)
+        .build();
     s.run();
     let result = s.get().unwrap();
     let time = s.time();

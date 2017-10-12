@@ -34,8 +34,9 @@ pub trait Fitness: Ord + Eq {
 /// Finally, a Phenotype has a certain fitness value associated with it.
 ///
 /// If reasonable, it is recommended to have your implementation derive `Copy`.
-pub trait Phenotype<F>: Clone
-    where F: Fitness
+pub trait Phenotype<F>
+where
+    F: Fitness,
 {
     /// Calculate the fitness of this Phenotype.
     fn fitness(&self) -> F;

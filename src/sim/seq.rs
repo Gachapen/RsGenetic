@@ -28,32 +28,32 @@ use super::select::*;
 use super::iterlimit::*;
 use super::earlystopper::*;
 use std::time::Instant;
-use std::marker::PhantomData;
 
 /// A sequential implementation of `::sim::Simulation`.
 /// The genetic algorithm is run in a single thread.
 #[derive(Debug)]
-pub struct Simulator<'a, T, F>
-    where T: 'a + Phenotype<F>,
-          F: Fitness
+pub struct Simulator<T, F>
+where
+    T: Phenotype<F>,
+    F: Fitness,
 {
-    population: &'a mut Vec<T>,
+    population: Vec<T>,
     iter_limit: IterLimit,
     selector: Box<Selector<T, F>>,
     earlystopper: Option<EarlyStopper<F>>,
     duration: Option<NanoSecond>,
     error: Option<String>,
-    phantom: PhantomData<&'a T>,
 }
 
-impl<'a, T, F> Simulation<'a, T, F> for Simulator<'a, T, F>
-    where T: Phenotype<F>,
-          F: Fitness
+impl<'a, T, F> Simulation<'a, T, F> for Simulator<T, F>
+where
+    T: Phenotype<F>,
+    F: Fitness,
 {
-    type B = SimulatorBuilder<'a, T, F>;
+    type B = SimulatorBuilder<T, F>;
 
     /// Create builder.
-    fn builder(population: &'a mut Vec<T>) -> SimulatorBuilder<'a, T, F> {
+    fn builder(population: Vec<T>) -> SimulatorBuilder<T, F> {
         SimulatorBuilder {
             sim: Simulator {
                 population: population,
@@ -62,7 +62,6 @@ impl<'a, T, F> Simulation<'a, T, F> for Simulator<'a, T, F>
                 earlystopper: None,
                 duration: Some(0),
                 error: None,
-                phantom: PhantomData::default(),
             },
         }
     }
@@ -87,7 +86,7 @@ impl<'a, T, F> Simulation<'a, T, F> for Simulator<'a, T, F>
 
             let mut children: Vec<T> = {
                 // Perform selection
-                let parents = match self.selector.select(self.population) {
+                let parents = match self.selector.select(&self.population) {
                     Ok(parents) => parents,
                     Err(e) => {
                         self.error = Some(e);
@@ -171,14 +170,15 @@ impl<'a, T, F> Simulation<'a, T, F> for Simulator<'a, T, F>
         self.duration
     }
 
-    fn population(&self) -> Vec<T> {
-        self.population.clone()
+    fn population(self) -> Vec<T> {
+        self.population
     }
 }
 
-impl<'a, T, F> Simulator<'a, T, F>
-    where T: Phenotype<F>,
-          F: Fitness
+impl<T, F> Simulator<T, F>
+where
+    T: Phenotype<F>,
+    F: Fitness,
 {
     /// Kill off phenotypes using stochastic universal sampling.
     fn kill_off(&mut self, count: usize) {
@@ -194,16 +194,18 @@ impl<'a, T, F> Simulator<'a, T, F>
 
 /// A `Builder` for the `Simulator` type.
 #[derive(Debug)]
-pub struct SimulatorBuilder<'a, T, F>
-    where T: 'a + Phenotype<F>,
-          F: Fitness
+pub struct SimulatorBuilder<T, F>
+where
+    T: Phenotype<F>,
+    F: Fitness,
 {
-    sim: Simulator<'a, T, F>,
+    sim: Simulator<T, F>,
 }
 
-impl<'a, T, F> SimulatorBuilder<'a, T, F>
-    where T: Phenotype<F>,
-          F: Fitness
+impl<T, F> SimulatorBuilder<T, F>
+where
+    T: Phenotype<F>,
+    F: Fitness,
 {
     /// Set the selector of the resulting `Simulator`.
     ///
@@ -233,11 +235,12 @@ impl<'a, T, F> SimulatorBuilder<'a, T, F>
     }
 }
 
-impl<'a, T, F> Builder<Simulator<'a, T, F>> for SimulatorBuilder<'a, T, F>
-    where T: Phenotype<F>,
-          F: Fitness
+impl<'a, T, F> Builder<Simulator<T, F>> for SimulatorBuilder<T, F>
+where
+    T: Phenotype<F>,
+    F: Fitness,
 {
-    fn build(self) -> Simulator<'a, T, F> {
+    fn build(self) -> Simulator<T, F> {
         self.sim
     }
 }
@@ -252,8 +255,8 @@ mod tests {
     #[test]
     fn test_kill_off_count() {
         let selector = MaximizeSelector::new(2);
-        let mut population: Vec<Test> = (0..100).map(|i| Test { f: i }).collect();
-        let mut s = seq::Simulator::builder(&mut population)
+        let population: Vec<Test> = (0..100).map(|i| Test { f: i }).collect();
+        let mut s = seq::Simulator::builder(population)
             .set_selector(Box::new(selector))
             .build();
         s.kill_off(10);
@@ -263,8 +266,8 @@ mod tests {
     #[test]
     fn test_max_iters() {
         let selector = MaximizeSelector::new(2);
-        let mut population: Vec<Test> = (0..100).map(|i| Test { f: i }).collect();
-        let mut s = seq::Simulator::builder(&mut population)
+        let population: Vec<Test> = (0..100).map(|i| Test { f: i }).collect();
+        let mut s = seq::Simulator::builder(population)
             .set_selector(Box::new(selector))
             .set_max_iters(2)
             .build();
@@ -275,8 +278,8 @@ mod tests {
     #[test]
     fn test_early_stopping() {
         let selector = MaximizeSelector::new(2);
-        let mut population: Vec<Test> = (0..100).map(|_| Test { f: 0 }).collect();
-        let mut s = seq::Simulator::builder(&mut population)
+        let population: Vec<Test> = (0..100).map(|_| Test { f: 0 }).collect();
+        let mut s = seq::Simulator::builder(population)
             .set_selector(Box::new(selector))
             .set_early_stop(MyFitness { f: 10 }, 5)
             .set_max_iters(10)
@@ -288,8 +291,8 @@ mod tests {
     #[test]
     fn test_selector_error_propagate() {
         let selector = MaximizeSelector::new(0);
-        let mut population: Vec<Test> = (0..100).map(|i| Test { f: i }).collect();
-        let mut s = seq::Simulator::builder(&mut population)
+        let population: Vec<Test> = (0..100).map(|i| Test { f: i }).collect();
+        let mut s = seq::Simulator::builder(population)
             .set_selector(Box::new(selector))
             .build();
         s.run();
@@ -299,9 +302,9 @@ mod tests {
     #[test]
     fn test_population_get() {
         let selector = MaximizeSelector::new(0);
-        let mut population: Vec<Test> = (0..100).map(|i| Test { f: i }).collect();
+        let population: Vec<Test> = (0..100).map(|i| Test { f: i }).collect();
         let population_len = population.len();
-        let s = seq::Simulator::builder(&mut population)
+        let s = seq::Simulator::builder(population)
             .set_selector(Box::new(selector))
             .build();
         let gotten_population = s.population();

@@ -67,7 +67,9 @@ pub trait Simulation<'a, T, F>
     ///
     /// `population` is a required parameter of any `Simulation`, which
     /// is why it is a parameter of this function.
-    fn builder(population: &'a mut Vec<T>) -> Self::B where Self: Sized;
+    fn builder(population: Vec<T>) -> Self::B
+    where
+        Self: Sized;
     /// Run the simulation completely.
     fn run(&mut self) -> RunResult;
     /// Make one step in the simulation. This function returns a `StepResult`:
@@ -111,5 +113,5 @@ pub trait Simulation<'a, T, F>
     ///
     /// Using this function clones the population out of the `Simulation`, so use
     /// it sparingly.
-    fn population(&self) -> Vec<T>;
+    fn population(self) -> Vec<T>;
 }
