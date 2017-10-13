@@ -67,6 +67,10 @@ where
     }
 
     fn step(&mut self) -> StepResult {
+        if self.error.is_some() {
+            panic!("Attemped to step a Simulator after an error!")
+        }
+
         let time_start;
 
         if self.population.is_empty() {
@@ -131,19 +135,8 @@ where
         } else {
             StepResult::Done
         }
-
     }
 
-    #[allow(deprecated)]
-    fn checked_step(&mut self) -> StepResult {
-        if self.error.is_some() {
-            panic!("Attemped to step a Simulator after an error!")
-        } else {
-            self.step()
-        }
-    }
-
-    #[allow(deprecated)]
     fn run(&mut self) -> RunResult {
         // Loop until Failure or Done.
         loop {
